@@ -1,6 +1,10 @@
 from flask import render_template, redirect, request, flash, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, login_required
+
 from . import auth
 from ..models import User
+from app import db
 
 @auth.route('/login')
 def login():
@@ -32,6 +36,7 @@ def signup():
 def signup_post():
 #     email = request.form.get('email')
     name = request.form.get('name')
+    email = request.form.get('email')
     password = request.form.get('password')
 
     user = User.query.filter_by(email=email).first() # if this returns a user, then the email already exists in database
@@ -41,7 +46,7 @@ def signup_post():
         return redirect(url_for('auth.signup'))
 
     # create new user with the form data. Hash the password so plaintext version isn't saved.
-    new_user = User(email=email, name=name, password=generate_password_hash(password, method='sha256'))
+    new_user = User(email=email, name=name, pass_secure=generate_password_hash(password, method='sha256'))
 
     # add the new user to the database
     db.session.add(new_user)
@@ -50,5 +55,7 @@ def signup_post():
     return redirect(url_for('auth.login'))
 
 @auth.route('/logout')
+@login_required
 def logout():
-    return 'Logout'
+    logout_user()
+    return redirect(url_for('main.index'))
